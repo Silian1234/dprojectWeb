@@ -18,15 +18,14 @@ class UserRegistrationAPIView(APIView):
         if form.is_valid():
             user = form.save()
             login(request, user)  # Аутентифицируем пользователя сразу после регистрации
-            # Возвращаем успешный ответ с информацией о пользователе
             return Response({
                 'username': user.username,
                 'email': user.email,
                 'avatar': user.userprofile.avatar.url if user.userprofile.avatar else None
             }, status=status.HTTP_201_CREATED)
         else:
-            # Возвращаем информацию об ошибках в форме
             return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class UserLoginAPIView(APIView):
     def post(self, request, *args, **kwargs):
@@ -44,8 +43,20 @@ class UserLoginAPIView(APIView):
                 'error': 'Неверные учетные данные'
             }, status=status.HTTP_401_UNAUTHORIZED)
 
+
 class PosterListView(APIView):
     def get(self, request):
         posters = Poster.objects.all()
         serializer = PosterSerializer(posters, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class PosterDetailView(APIView):
+    def get(self, request, pk):
+        try:
+            poster = Poster.objects.get(pk=pk)
+        except Poster.DoesNotExist:
+            return Response({'error': 'Poster not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = PosterSerializer(poster)
         return Response(serializer.data, status=status.HTTP_200_OK)

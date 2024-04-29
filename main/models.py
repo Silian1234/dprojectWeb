@@ -7,6 +7,8 @@ class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     is_staff = models.BooleanField(default=False, verbose_name='Является сотрудником')
     avatar = models.ImageField(upload_to='user_avatars/', null=True, blank=True, verbose_name='Аватар')
+    phone_number = models.CharField(max_length=15, null=True, blank=True, verbose_name='Телефонный номер')
+    description = models.TextField(null=True, blank=True, verbose_name='О себе')
     def __str__(self):
         return self.user.username
 
