@@ -15,15 +15,16 @@ from .serializers import *
 class GymViewSet(viewsets.ModelViewSet):
     queryset = Gym.objects.all()
     serializer_class = GymSerializer
-    authentication_classes = [TokenAuthentication]  # Предполагаем, что используете Token Authentication
-    permission_classes = [IsAuthenticated]  # Только аутентифицированные пользователи могут получить доступ
+    lookup_field = 'slug'
+    #authentication_classes = [TokenAuthentication]  # Предполагаем, что используете Token Authentication
+    permission_classes = [AllowAny]  # Только аутентифицированные пользователи могут получить доступ
 
 
 class ProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.select_related('user').all()  # Добавляем select_related для оптимизации запроса
     serializer_class = UserProfileSerializer
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
+    #authentication_classes = [TokenAuthentication]
+    permission_classes = [AllowAny]
 
 
 def csrf(request):
