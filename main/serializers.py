@@ -13,7 +13,7 @@ class PosterSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name']
+        fields = '__all__'
 
 # Сериализатор для профилей пользователей
 class UserProfileSerializer(serializers.ModelSerializer):
