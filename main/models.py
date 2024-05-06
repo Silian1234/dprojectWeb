@@ -9,20 +9,42 @@ class UserProfile(models.Model):
     avatar = models.ImageField(upload_to='user_avatars/', null=True, blank=True, verbose_name='Аватар')
     phone_number = models.CharField(max_length=15, null=True, blank=True, verbose_name='Телефонный номер')
     description = models.TextField(null=True, blank=True, verbose_name='О себе')
+    gyms = models.ManyToManyField('Gym', related_name='members')  # Изменено related_name
+    trainees = models.ManyToManyField('self', symmetrical=False, related_name='trainers', blank=True)
+    group_number = models.CharField(max_length=15, null=True, blank=True, verbose_name='Номер группы')
+
     def __str__(self):
         return self.user.username
 
 @receiver(post_save, sender=User)
 def create_or_update_user_profile(sender, instance, created, **kwargs):
-    if created:
-        UserProfile.objects.create(user=instance)
-    instance.userprofile.save()
+    UserProfile.objects.get_or_create(user=instance)  # Используем get_or_create для избежания дублирования
 
 class Poster(models.Model):
-    image = models.ImageField(upload_to='posters/')
+    picture = models.ImageField(upload_to='posters/')
     title = models.CharField(max_length=200)
+    description = models.CharField(max_length=255, null=True, blank=True)
     text = models.TextField()
     publish_date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.title
+
+class Location(models.Model):
+    latitude = models.FloatField(verbose_name='Широта')
+    longitude = models.FloatField(verbose_name='Долгота')
+    address = models.CharField(max_length=200, verbose_name='Адрес')
+
+    def __str__(self):
+        return f"{self.latitude}, {self.longitude} - {self.address}"
+
+
+class Image(models.Model):
+    image = models.ImageField(upload_to='gyms/')
+
+class Gym(models.Model):
+    name = models.CharField(max_length=255)
+    pictures = models.ManyToManyField(Image, related_name='gyms')
+    description = models.TextField(null=True, blank=True, verbose_name='Описание зала')
+    location = models.OneToOneField(Location, on_delete=models.CASCADE)
+    users = models.ManyToManyField(UserProfile, related_name='user_profiles')  # Изменено related_name для предотвращения конфликта
