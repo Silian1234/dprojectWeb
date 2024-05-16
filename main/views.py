@@ -1,3 +1,5 @@
+import logging
+
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -9,7 +11,7 @@ from .serializers import *
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from .serializers import UserRegistrationSerializer, UserLoginSerializer
@@ -158,18 +160,25 @@ class PosterDetailView(APIView):
         serializer = PosterSerializer(poster)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+logger = logging.getLogger(__name__)
+
+
 class PosterViewSet(viewsets.ModelViewSet):
     queryset = Poster.objects.all()
     serializer_class = PosterSerializer
-    parser_classes = (MultiPartParser, FormParser)  # Добавить парсеры для обработки файлов
+    parser_classes = (MultiPartParser, FormParser)
 
     def get_permissions(self):
         if self.action == 'create':  # Это срабатывает на POST запросы
-            self.permission_classes = [IsStaff]
+            self.permission_classes = [IsAuthenticated, IsStaff]
         else:
             self.permission_classes = [AllowAny]
         return super().get_permissions()
 
+    def create(self, request, *args, **kwargs):
+        logger.info(f"Request headers: {request.headers}")
+        logger.info(f"Request data: {request.data}")
+        return super().create(request, *args, **kwargs)
 
 router = DefaultRouter()
 router.register(r'blog', PosterViewSet)
