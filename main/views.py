@@ -31,26 +31,31 @@ class ProfileViewSet(viewsets.ModelViewSet):
 def csrf(request):
     return JsonResponse({'csrfToken': get_token(request)})
 
+from rest_framework import viewsets, status
+from rest_framework.response import Response
+from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+from .serializers import UserRegistrationSerializer, UserLoginSerializer
+
 class AuthViewSet(viewsets.ViewSet):
     permission_classes = [AllowAny]
 
     def get_serializer_class(self):
-        # Здесь мы определяем, какой сериализатор использовать в зависимости от действия
         if self.action == 'register':
             return UserRegistrationSerializer
         elif self.action == 'login':
             return UserLoginSerializer
         else:
-            return None  # Необходимо обработать случай, когда сериализатор не найден
+            return None
 
     def get_serializer(self, *args, **kwargs):
-        # Создание экземпляра сериализатора с текущим классом сериализатора и контекстом
         serializer_class = self.get_serializer_class()
         kwargs['context'] = self.get_serializer_context()
         return serializer_class(*args, **kwargs)
 
     def get_serializer_context(self):
-        # Контекст для сериализатора, содержит информацию о запросе и прочее
         return {
             'request': self.request,
             'format': self.format_kwarg,

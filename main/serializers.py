@@ -30,7 +30,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 # Сериализатор для регистрации пользователей
 class UserRegistrationSerializer(serializers.ModelSerializer):
-    token = serializers.CharField(read_only=True, source='user.auth_token.key')
+    token = serializers.CharField(read_only=True, source='auth_token.key')
 
     class Meta:
         model = User
@@ -39,13 +39,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)
+        UserProfile.objects.create(user=user)
         Token.objects.create(user=user)  # Создание токена при регистрации
-        return user
-
-    def create(self, validated_data):
-        user_data = validated_data.pop('user')
-        user = User.objects.create_user(**user_data)
-        UserProfile.objects.create(user=user, **validated_data)
         return user
 
 # Сериализатор для входа пользователей
