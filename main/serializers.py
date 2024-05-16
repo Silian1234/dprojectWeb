@@ -1,13 +1,16 @@
 from django.contrib.auth import authenticate
 from rest_framework import serializers
-from .models import Poster, UserProfile, Gym, User  # Assuming User is imported correctly
+from .models import Poster, UserProfile, Gym, User, Image  # Assuming User is imported correctly
 
 # Сериализатор для модели Poster
 class PosterSerializer(serializers.ModelSerializer):
+    picture = serializers.ImageField(use_url=True)
+
     class Meta:
         model = Poster
         fields = '__all__'
         read_only_fields = ['publish_date']
+
 
 # Базовый сериализатор для пользователя, исключающий чувствительные данные
 class UserSerializer(serializers.ModelSerializer):
@@ -47,8 +50,18 @@ class UserLoginSerializer(serializers.Serializer):
             return {'user': user}
         raise serializers.ValidationError("Incorrect Credentials")
 
+class ImageSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField()
+
+    class Meta:
+        model = Image
+        fields = ['image']
+
+
 # Сериализатор для объектов Gym
 class GymSerializer(serializers.ModelSerializer):
+    pictures = ImageSerializer(many=True, read_only=True)
+
     class Meta:
         model = Gym
-        fields = '__all__'
+        fields = ['slug', 'name', 'pictures', 'description', 'location', 'users']
