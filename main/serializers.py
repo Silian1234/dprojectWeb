@@ -8,7 +8,7 @@ class PosterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Poster
-        fields = '__all__'
+        fields = ['picture', 'title', 'description', 'text']
         read_only_fields = ['publish_date']
 
 
