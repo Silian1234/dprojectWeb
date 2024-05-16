@@ -38,8 +38,10 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
+        # Создаем пользователя
         user = User.objects.create_user(**validated_data)
-        UserProfile.objects.create(user=user)
+        # Проверяем наличие профиля и создаем его, если не существует
+        profile, created = UserProfile.objects.get_or_create(user=user)
         Token.objects.create(user=user)  # Создание токена при регистрации
         return user
 
