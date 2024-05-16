@@ -11,7 +11,7 @@ class UserProfile(models.Model):
     avatar = models.ImageField(upload_to='user_avatars/', null=True, blank=True, verbose_name='Аватар')
     phone_number = models.CharField(max_length=15, null=True, blank=True, verbose_name='Телефонный номер')
     description = models.TextField(null=True, blank=True, verbose_name='О себе')
-    gyms = models.ManyToManyField('Gym', related_name='members')  # Изменено related_name
+    gyms = models.ManyToManyField('Gym', null=True, related_name='members')  # Изменено related_name
     trainees = models.ManyToManyField('self', symmetrical=False, related_name='trainers', blank=True)
     group_number = models.CharField(max_length=15, null=True, blank=True, verbose_name='Номер группы')
 
