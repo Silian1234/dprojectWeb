@@ -1,16 +1,17 @@
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
-from rest_framework import status, viewsets
+from drf_yasg import openapi
 from rest_framework.authtoken.models import Token
-from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.response import Response
 from rest_framework.routers import DefaultRouter
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.authentication import SessionAuthentication, BasicAuthentication, TokenAuthentication
 from .serializers import *
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from drf_yasg.utils import swagger_auto_schema
+from .serializers import UserRegistrationSerializer, UserLoginSerializer
 
 # Можете добавить вашу настройку аутентификации на уровне проекта в settings.py
 
@@ -33,45 +34,76 @@ def csrf(request):
 class AuthViewSet(viewsets.ViewSet):
     permission_classes = [AllowAny]
 
-    @swagger_auto_schema(request_body=UserRegistrationSerializer)
+    def get_serializer_class(self):
+        # Здесь мы определяем, какой сериализатор использовать в зависимости от действия
+        if self.action == 'register':
+            return UserRegistrationSerializer
+        elif self.action == 'login':
+            return UserLoginSerializer
+        else:
+            return None  # Необходимо обработать случай, когда сериализатор не найден
+
+    def get_serializer(self, *args, **kwargs):
+        # Создание экземпляра сериализатора с текущим классом сериализатора и контекстом
+        serializer_class = self.get_serializer_class()
+        kwargs['context'] = self.get_serializer_context()
+        return serializer_class(*args, **kwargs)
+
+    def get_serializer_context(self):
+        # Контекст для сериализатора, содержит информацию о запросе и прочее
+        return {
+            'request': self.request,
+            'format': self.format_kwarg,
+            'view': self
+        }
+
+    @swagger_auto_schema(
+        method='post',
+        request_body=UserRegistrationSerializer,
+        responses={201: openapi.Response('Registration Successful', UserRegistrationSerializer)}
+    )
     @action(detail=False, methods=['post'], url_path='register')
     def register(self, request):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
+            token = Token.objects.get(user=user)
             return Response({
                 'username': user.username,
                 'email': user.email,
-                'avatar': user.userprofile.avatar.url if user.userprofile.avatar else None
+                'token': token.key
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @swagger_auto_schema(request_body=UserLoginSerializer)
+    @swagger_auto_schema(
+        method='post',
+        request_body=UserLoginSerializer,
+        responses={
+            200: openapi.Response('Login Successful', openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'message': openapi.Schema(type=openapi.TYPE_STRING, description='Success message'),
+                    'username': openapi.Schema(type=openapi.TYPE_STRING, description='Username'),
+                    'token': openapi.Schema(type=openapi.TYPE_STRING, description='Authentication token')
+                }
+            )),
+            400: 'Invalid username or password'
+        }
+    )
     @action(detail=False, methods=['post'], url_path='login')
     def login(self, request):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             user = serializer.validated_data['user']
-            token, _ = Token.objects.get_or_create(user=user)
+            token, created = Token.objects.get_or_create(user=user)
             return Response({
                 'message': 'Успешная аутентификация',
                 'username': user.username,
                 'token': token.key
             }, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_401_UNAUTHORIZED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=False, methods=['post'], url_path='login')
-    def login(self, request):
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.validated_data['user']
-            token, _ = Token.objects.get_or_create(user=user)
-            return Response({
-                'message': 'Успешная аутентификация',
-                'username': user.username,
-                'token': token.key
-            }, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_401_UNAUTHORIZED)
 
 
 class UserRegistrationAPIView(APIView):

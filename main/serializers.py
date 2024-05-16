@@ -1,5 +1,7 @@
 from django.contrib.auth import authenticate
 from rest_framework import serializers
+from rest_framework.authtoken.models import Token
+
 from .models import Poster, UserProfile, Gym, User, Image  # Assuming User is imported correctly
 
 # Сериализатор для модели Poster
@@ -28,10 +30,17 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 # Сериализатор для регистрации пользователей
 class UserRegistrationSerializer(serializers.ModelSerializer):
-    user = UserSerializer(required=True)
+    token = serializers.CharField(read_only=True, source='user.auth_token.key')
+
     class Meta:
-        model = UserProfile
-        fields = ['user', 'avatar', 'phone_number', 'description']
+        model = User
+        fields = ('username', 'password', 'email', 'token')
+        extra_kwargs = {'password': {'write_only': True}}
+
+    def create(self, validated_data):
+        user = User.objects.create_user(**validated_data)
+        Token.objects.create(user=user)  # Создание токена при регистрации
+        return user
 
     def create(self, validated_data):
         user_data = validated_data.pop('user')

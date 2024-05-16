@@ -20,7 +20,8 @@ class UserProfile(models.Model):
 
 @receiver(post_save, sender=User)
 def create_or_update_user_profile(sender, instance, created, **kwargs):
-    UserProfile.objects.get_or_create(user=instance)  # Используем get_or_create для избежания дублирования
+    if created:
+        UserProfile.objects.get_or_create(user=instance)
 
 class Poster(models.Model):
     picture = models.ImageField(upload_to='posters/')
