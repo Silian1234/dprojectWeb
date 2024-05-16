@@ -1,19 +1,18 @@
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
-from drf_yasg import openapi
-from rest_framework.authtoken.models import Token
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.routers import DefaultRouter
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated, AllowAny
+
+from .permission import IsStaff
 from .serializers import *
 from rest_framework import viewsets, status
-from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny
 from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 from .serializers import UserRegistrationSerializer, UserLoginSerializer
-
-# Можете добавить вашу настройку аутентификации на уровне проекта в settings.py
 
 class GymViewSet(viewsets.ModelViewSet):
     queryset = Gym.objects.all()
@@ -30,14 +29,6 @@ class ProfileViewSet(viewsets.ModelViewSet):
 
 def csrf(request):
     return JsonResponse({'csrfToken': get_token(request)})
-
-from rest_framework import viewsets, status
-from rest_framework.response import Response
-from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
-from .serializers import UserRegistrationSerializer, UserLoginSerializer
 
 class AuthViewSet(viewsets.ViewSet):
     permission_classes = [AllowAny]
@@ -170,8 +161,14 @@ class PosterDetailView(APIView):
 class PosterViewSet(viewsets.ModelViewSet):
     queryset = Poster.objects.all()
     serializer_class = PosterSerializer
-    permission_classes = [AllowAny]  # Разрешить доступ всем пользователям
     parser_classes = (MultiPartParser, FormParser)  # Добавить парсеры для обработки файлов
+
+    def get_permissions(self):
+        if self.action == 'create':  # Это срабатывает на POST запросы
+            self.permission_classes = [IsStaff]
+        else:
+            self.permission_classes = [AllowAny]
+        return super().get_permissions()
 
 
 router = DefaultRouter()

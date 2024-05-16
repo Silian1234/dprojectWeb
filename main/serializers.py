@@ -2,7 +2,7 @@ from django.contrib.auth import authenticate
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 
-from .models import Poster, UserProfile, Gym, User, Image  # Assuming User is imported correctly
+from .models import Poster, UserProfile, Gym, User, Image, Location  # Assuming User is imported correctly
 
 # Сериализатор для модели Poster
 class PosterSerializer(serializers.ModelSerializer):
@@ -63,9 +63,14 @@ class ImageSerializer(serializers.ModelSerializer):
         model = Image
         fields = ['image']
 
+class LocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Location
+        fields = ['latitude', 'longitude', 'address']
 
 # Сериализатор для объектов Gym
 class GymSerializer(serializers.ModelSerializer):
+    location = LocationSerializer()  # Использование вложенного сериализатора
     pictures = ImageSerializer(many=True, read_only=True)
 
     class Meta:

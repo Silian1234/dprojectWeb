@@ -45,6 +45,8 @@ class Location(models.Model):
 class Image(models.Model):
     image = models.ImageField(upload_to='gyms/')
 
+
+
 class Gym(models.Model):
     slug = models.SlugField(max_length=50, unique=True, blank=True)
     name = models.CharField(max_length=255)
