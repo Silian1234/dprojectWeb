@@ -23,7 +23,7 @@ class UserSerializer(serializers.ModelSerializer):
 # Сериализатор для профилей пользователей
 class UserProfileSerializer(serializers.ModelSerializer):
     user = UserSerializer()
-
+    
     class Meta:
         model = UserProfile
         fields = ['user', 'avatar', 'phone_number', 'description', 'gyms']
@@ -70,6 +70,7 @@ class LocationSerializer(serializers.ModelSerializer):
 class GymSerializer(serializers.ModelSerializer):
     location = LocationSerializer()  # Использование вложенного сериализатора
     pictures = ImageSerializer(many=True, read_only=True)
+    users = UserProfileSerializer(many=True, read_only=True)
 
     class Meta:
         model = Gym
