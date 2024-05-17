@@ -67,6 +67,7 @@ class AuthViewSet(viewsets.ViewSet):
             user = serializer.save()
             token = Token.objects.get(user=user)
             return Response({
+                'id': user.id,
                 'username': user.username,
                 'email': user.email,
                 'token': token.key
@@ -96,6 +97,7 @@ class AuthViewSet(viewsets.ViewSet):
             token, created = Token.objects.get_or_create(user=user)
             return Response({
                 'message': 'Успешная аутентификация',
+                'id': user.id,
                 'username': user.username,
                 'token': token.key
             }, status=status.HTTP_200_OK)
