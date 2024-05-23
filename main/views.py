@@ -165,6 +165,15 @@ class PosterDetailView(APIView):
 logger = logging.getLogger(__name__)
 
 
+class ScheduleViewSet(viewsets.ModelViewSet):
+    queryset = Schedule.objects.all()
+    serializer_class = ScheduleSerializer
+    permission_classes = [IsAuthenticated, IsStaff]
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+
 class PosterViewSet(viewsets.ModelViewSet):
     queryset = Poster.objects.all()
     serializer_class = PosterSerializer

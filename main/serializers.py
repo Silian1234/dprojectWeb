@@ -2,7 +2,7 @@ from django.contrib.auth import authenticate
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 
-from .models import Poster, UserProfile, Gym, User, Image, Location  # Assuming User is imported correctly
+from .models import Poster, UserProfile, Gym, User, Image, Location, Schedule  # Assuming User is imported correctly
 
 # Сериализатор для модели Poster
 class PosterSerializer(serializers.ModelSerializer):
@@ -53,6 +53,12 @@ class UserLoginSerializer(serializers.Serializer):
         if user:
             return {'user': user}
         raise serializers.ValidationError("Incorrect Credentials")
+
+class ScheduleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Schedule
+        fields = ['group', 'timestamp', 'address', 'club', 'user']
+
 
 class ImageSerializer(serializers.ModelSerializer):
     image = serializers.ImageField()
