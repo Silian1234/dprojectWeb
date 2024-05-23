@@ -55,6 +55,7 @@ class UserLoginSerializer(serializers.Serializer):
         raise serializers.ValidationError("Incorrect Credentials")
 
 class ScheduleSerializer(serializers.ModelSerializer):
+    club = serializers.SlugRelatedField(slug_field='slug', queryset=Gym.objects.all())
     class Meta:
         model = Schedule
         fields = ['group', 'timestamp', 'address', 'club', 'user']
