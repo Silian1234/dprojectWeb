@@ -110,10 +110,9 @@ class UserRegistrationAPIView(APIView):
     permission_classes = [AllowAny]  # Разрешаем регистрацию любому пользователю
 
     def post(self, request, *args, **kwargs):
-        serializer = UserRegistrationSerializer(data=request.data)  # Используйте Serializer вместо Form
+        serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            # Аутентификация с использованием DRF, вместо Django login
             return Response({
                 'username': user.username,
                 'email': user.email,

@@ -30,16 +30,26 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 # Сериализатор для регистрации пользователей
 class UserRegistrationSerializer(serializers.ModelSerializer):
+    first_name = serializers.CharField(required=True)
+    last_name = serializers.CharField(required=True)
+    email = serializers.EmailField(required=True)
     token = serializers.CharField(read_only=True, source='auth_token.key')
 
     class Meta:
         model = User
-        fields = ('username', 'password', 'email', 'token')
+        fields = ('username', 'password', 'first_name', 'last_name', 'email', 'token')
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
-        user = User.objects.create_user(**validated_data)
-        UserProfile.objects.get_or_create(user=user)
+        user = User(
+            username=validated_data['username'],
+            first_name=validated_data['first_name'],
+            last_name=validated_data['last_name'],
+            email=validated_data['email']
+        )
+        user.set_password(validated_data['password'])
+        user.save()
+        UserProfile.objects.create(user=user)
         Token.objects.create(user=user)
         return user
 
