@@ -1,9 +1,7 @@
 from django.contrib.auth import authenticate
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
-
 from .models import Poster, UserProfile, Gym, User, Image, Location, Schedule
-
 
 # Сериализатор для модели Poster
 class PosterSerializer(serializers.ModelSerializer):
@@ -14,13 +12,11 @@ class PosterSerializer(serializers.ModelSerializer):
         fields = ['picture', 'title', 'description', 'text']
         read_only_fields = ['publish_date']
 
-
 # Базовый сериализатор для пользователя, исключающий чувствительные данные
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = '__all__'
-
+        fields = ['username', 'first_name', 'last_name', 'email']
 
 # Сериализатор для регистрации пользователей
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -47,7 +43,6 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         Token.objects.create(user=user)
         return user
 
-
 # Сериализатор для входа пользователей
 class UserLoginSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
@@ -59,15 +54,6 @@ class UserLoginSerializer(serializers.Serializer):
             return {'user': user}
         raise serializers.ValidationError("Incorrect Credentials")
 
-
-class ScheduleSerializer(serializers.ModelSerializer):
-    club = serializers.SlugRelatedField(slug_field='slug', queryset=Gym.objects.all())
-
-    class Meta:
-        model = Schedule
-        fields = ['group', 'timestamp', 'address', 'club', 'user']
-
-
 class ImageSerializer(serializers.ModelSerializer):
     image = serializers.ImageField()
 
@@ -75,12 +61,10 @@ class ImageSerializer(serializers.ModelSerializer):
         model = Image
         fields = ['image']
 
-
 class LocationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Location
         fields = ['latitude', 'longitude', 'address']
-
 
 # Сериализатор для объектов Gym
 class GymSerializer(serializers.ModelSerializer):
@@ -100,3 +84,24 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = ['user', 'avatar', 'phone_number', 'description', 'gyms']
+
+class ScheduleItemSerializer(serializers.ModelSerializer):
+    user = UserProfileSerializer()
+    club = GymSerializer()
+
+    class Meta:
+        model = Schedule
+        fields = ['group', 'address', 'club', 'user']
+
+class DailyScheduleSerializer(serializers.Serializer):
+    time = serializers.IntegerField()
+    event = ScheduleItemSerializer(allow_null=True)
+
+class WeeklyScheduleSerializer(serializers.Serializer):
+    monday = serializers.DictField(child=DailyScheduleSerializer(), allow_null=True)
+    tuesday = serializers.DictField(child=DailyScheduleSerializer(), allow_null=True)
+    wednesday = serializers.DictField(child=DailyScheduleSerializer(), allow_null=True)
+    thursday = serializers.DictField(child=DailyScheduleSerializer(), allow_null=True)
+    friday = serializers.DictField(child=DailyScheduleSerializer(), allow_null=True)
+    saturday = serializers.DictField(child=DailyScheduleSerializer(), allow_null=True)
+    sunday = serializers.DictField(child=DailyScheduleSerializer(), allow_null=True)

@@ -71,10 +71,7 @@ class Gym(models.Model):
 
 class Schedule(models.Model):
     group = models.IntegerField(verbose_name='Группа')
-    timestamp = models.IntegerField(verbose_name='Метка времени')
     address = models.CharField(max_length=255, verbose_name='Адрес')
+    timestamp = models.DateTimeField(verbose_name='Метка времени')
     club = models.ForeignKey(Gym, on_delete=models.CASCADE, verbose_name='Клуб')
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, verbose_name='Пользователь')
-
-    def __str__(self):
-        return f"Group {self.group} at {self.address} on {self.timestamp}"

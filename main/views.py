@@ -2,6 +2,7 @@ import logging
 
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
+from django.utils.timezone import localtime
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.routers import DefaultRouter
 from rest_framework.views import APIView
@@ -166,12 +167,44 @@ logger = logging.getLogger(__name__)
 
 class ScheduleViewSet(viewsets.ModelViewSet):
     queryset = Schedule.objects.all()
-    serializer_class = ScheduleSerializer
-    permission_classes = [IsAuthenticated, IsStaff]
+    serializer_class = ScheduleItemSerializer
+    permission_classes = [AllowAny]
 
-    def perform_create(self, serializer):
-        serializer.save()
+    def get_weekly_schedule(self):
+        days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+        schedule = {day: {} for day in days}
 
+        schedules = Schedule.objects.select_related('user', 'club').all()
+        for sched in schedules:
+            local_timestamp = localtime(sched.timestamp)  # Конвертируем в локальное время
+            day_name = days[local_timestamp.weekday()]  # Получаем день недели из локального timestamp
+            hour = local_timestamp.hour
+            schedule[day_name][hour] = {
+                'time': hour,
+                'event': sched
+            }
+
+        for day in days:
+            for hour in range(12, 19):  # Предполагаем, что рабочие часы с 12 до 18
+                if hour not in schedule[day]:
+                    schedule[day][hour] = {
+                        'time': hour,
+                        'event': None
+                    }
+
+        return schedule
+
+    @action(detail=False, methods=['get'])
+    def weekly(self, request):
+        schedule_data = self.get_weekly_schedule()
+        serializer = WeeklyScheduleSerializer(schedule_data)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def weekly(self, request):
+        schedule_data = self.get_weekly_schedule()
+        serializer = WeeklyScheduleSerializer(schedule_data)
+        return Response(serializer.data)
 
 class PosterViewSet(viewsets.ModelViewSet):
     queryset = Poster.objects.all()
@@ -179,7 +212,7 @@ class PosterViewSet(viewsets.ModelViewSet):
     parser_classes = (MultiPartParser, FormParser)
 
     def get_permissions(self):
-        if self.action == 'create':  # Это срабатывает на POST запросы
+        if self.action == 'create':
             self.permission_classes = [IsAuthenticated, IsStaff]
         else:
             self.permission_classes = [AllowAny]

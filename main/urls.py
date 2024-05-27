@@ -12,7 +12,7 @@ router.register(r'gyms', GymViewSet)
 router.register(r'profiles', ProfileViewSet)
 router.register(r'blog', PosterViewSet)
 router.register(r'auth', AuthViewSet, basename='auth')
-router.register(r'schedule', ScheduleViewSet)
+router.register(r'schedule', ScheduleViewSet, basename='schedule')
 
 urlpatterns = [
     path('api/', include(router.urls))
