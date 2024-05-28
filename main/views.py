@@ -108,12 +108,13 @@ class AuthViewSet(viewsets.ViewSet):
 
 
 class UserRegistrationAPIView(APIView):
-    permission_classes = [AllowAny]  # Разрешаем регистрацию любому пользователю
+    permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
         serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
+            # Проверка наличия профиля перед его созданием уже в сериализаторе
             return Response({
                 'username': user.username,
                 'email': user.email,

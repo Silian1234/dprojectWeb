@@ -39,7 +39,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         )
         user.set_password(validated_data['password'])
         user.save()
-        UserProfile.objects.create(user=user)
+        UserProfile.objects.get_or_create(user=user)  # Изменено для предотвращения дублирования
         Token.objects.create(user=user)
         return user
 
