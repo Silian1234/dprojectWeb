@@ -80,16 +80,24 @@ class GymSerializer(serializers.ModelSerializer):
         users = obj.users.all()
         return UserProfileSerializer(users, many=True, context=self.context).data
 
+class GymWithoutUsersSerializer(serializers.ModelSerializer):
+    location = LocationSerializer()
+    pictures = ImageSerializer(many=True, read_only=True)
 
+    class Meta:
+        model = Gym
+        fields = ['slug', 'name', 'pictures', 'description', 'location']
 
 # Сериализатор для профилей пользователей
 class UserProfileSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
-    gyms = serializers.SlugRelatedField(many=True, read_only=True, slug_field='slug')  # Возвращаем slug
+    avatar = serializers.ImageField(required=False, allow_null=True)
+    gyms = GymWithoutUsersSerializer(many=True, read_only=True)
 
     class Meta:
         model = UserProfile
         fields = ['user', 'avatar', 'phone_number', 'description', 'gyms', 'is_staff', 'group_number']
+
 
 
 class ScheduleItemSerializer(serializers.ModelSerializer):

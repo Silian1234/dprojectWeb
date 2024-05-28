@@ -23,10 +23,109 @@ class GymViewSet(viewsets.ModelViewSet):
     lookup_field = 'slug'
     permission_classes = [AllowAny]
 
+from rest_framework.parsers import MultiPartParser, FormParser
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+
 class ProfileViewSet(viewsets.ModelViewSet):
-    queryset = UserProfile.objects.select_related('user').all()  # Добавляем select_related для оптимизации запроса
+    queryset = UserProfile.objects.select_related('user').all()
     serializer_class = UserProfileSerializer
     permission_classes = [AllowAny]
+    parser_classes = (MultiPartParser, FormParser)
+
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter('username', openapi.IN_FORM, description="Username", type=openapi.TYPE_STRING),
+            openapi.Parameter('password', openapi.IN_FORM, description="Password", type=openapi.TYPE_STRING),
+            openapi.Parameter('first_name', openapi.IN_FORM, description="First Name", type=openapi.TYPE_STRING),
+            openapi.Parameter('last_name', openapi.IN_FORM, description="Last Name", type=openapi.TYPE_STRING),
+            openapi.Parameter('email', openapi.IN_FORM, description="Email", type=openapi.TYPE_STRING),
+            openapi.Parameter('avatar', openapi.IN_FORM, description="Avatar", type=openapi.TYPE_FILE),
+            openapi.Parameter('phone_number', openapi.IN_FORM, description="Phone Number", type=openapi.TYPE_STRING),
+            openapi.Parameter('description', openapi.IN_FORM, description="Description", type=openapi.TYPE_STRING),
+            openapi.Parameter('is_staff', openapi.IN_FORM, description="Is Staff", type=openapi.TYPE_BOOLEAN),
+            openapi.Parameter('group_number', openapi.IN_FORM, description="Group Number", type=openapi.TYPE_STRING),
+        ]
+    )
+    def create(self, request, *args, **kwargs):
+        user_data = {
+            'username': request.data.get('username'),
+            'password': request.data.get('password'),
+            'first_name': request.data.get('first_name'),
+            'last_name': request.data.get('last_name'),
+            'email': request.data.get('email')
+        }
+
+        user_serializer = UserSerializer(data=user_data)
+        user_serializer.is_valid(raise_exception=True)
+        user = user_serializer.save()
+        user.set_password(user_data['password'])
+        user.save()
+
+        profile_data = {
+            'user': user.id,
+            'avatar': request.FILES.get('avatar'),
+            'phone_number': request.data.get('phone_number'),
+            'description': request.data.get('description'),
+            'is_staff': request.data.get('is_staff'),
+            'group_number': request.data.get('group_number')
+        }
+
+        profile_serializer = self.get_serializer(data=profile_data)
+        profile_serializer.is_valid(raise_exception=True)
+        self.perform_create(profile_serializer)
+
+        headers = self.get_success_headers(profile_serializer.data)
+        return Response(profile_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter('username', openapi.IN_FORM, description="Username", type=openapi.TYPE_STRING),
+            openapi.Parameter('password', openapi.IN_FORM, description="Password", type=openapi.TYPE_STRING),
+            openapi.Parameter('first_name', openapi.IN_FORM, description="First Name", type=openapi.TYPE_STRING),
+            openapi.Parameter('last_name', openapi.IN_FORM, description="Last Name", type=openapi.TYPE_STRING),
+            openapi.Parameter('email', openapi.IN_FORM, description="Email", type=openapi.TYPE_STRING),
+            openapi.Parameter('avatar', openapi.IN_FORM, description="Avatar", type=openapi.TYPE_FILE),
+            openapi.Parameter('phone_number', openapi.IN_FORM, description="Phone Number", type=openapi.TYPE_STRING),
+            openapi.Parameter('description', openapi.IN_FORM, description="Description", type=openapi.TYPE_STRING),
+            openapi.Parameter('is_staff', openapi.IN_FORM, description="Is Staff", type=openapi.TYPE_BOOLEAN),
+            openapi.Parameter('group_number', openapi.IN_FORM, description="Group Number", type=openapi.TYPE_STRING),
+        ]
+    )
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+
+        user_data = {
+            'username': request.data.get('username', instance.user.username),
+            'password': request.data.get('password'),
+            'first_name': request.data.get('first_name', instance.user.first_name),
+            'last_name': request.data.get('last_name', instance.user.last_name),
+            'email': request.data.get('email', instance.user.email)
+        }
+
+        user_serializer = UserSerializer(instance.user, data=user_data, partial=partial)
+        user_serializer.is_valid(raise_exception=True)
+        user = user_serializer.save()
+
+        if 'password' in request.data:
+            user.set_password(request.data['password'])
+            user.save()
+
+        profile_data = {
+            'avatar': request.FILES.get('avatar', instance.avatar),
+            'phone_number': request.data.get('phone_number', instance.phone_number),
+            'description': request.data.get('description', instance.description),
+            'is_staff': request.data.get('is_staff', instance.is_staff),
+            'group_number': request.data.get('group_number', instance.group_number)
+        }
+
+        profile_serializer = self.get_serializer(instance, data=profile_data, partial=partial)
+        profile_serializer.is_valid(raise_exception=True)
+        self.perform_update(profile_serializer)
+
+        return Response(profile_serializer.data)
+
 
 def csrf(request):
     return JsonResponse({'csrfToken': get_token(request)})
