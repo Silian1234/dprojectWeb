@@ -85,7 +85,7 @@ class GymSerializer(serializers.ModelSerializer):
 # Сериализатор для профилей пользователей
 class UserProfileSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
-    gyms = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    gyms = serializers.SlugRelatedField(many=True, read_only=True, slug_field='slug')  # Возвращаем slug
 
     class Meta:
         model = UserProfile
