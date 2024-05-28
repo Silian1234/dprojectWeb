@@ -70,10 +70,17 @@ class LocationSerializer(serializers.ModelSerializer):
 class GymSerializer(serializers.ModelSerializer):
     location = LocationSerializer()  # Использование вложенного сериализатора
     pictures = ImageSerializer(many=True, read_only=True)
+    users = UserSerializer(many=True, read_only=True)
 
     class Meta:
         model = Gym
-        fields = ['slug', 'name', 'pictures', 'description', 'location']
+        fields = ['slug', 'name', 'pictures', 'description', 'location', 'users']
+
+    def to_representation(self, instance):
+        users = instance.users.filter(is_staff=True)  # Фильтрация пользователей с is_staff == True
+        data = super().to_representation(instance)
+        data['users'] = UserSerializer(users, many=True).data
+        return data
 
 
 # Сериализатор для профилей пользователей
