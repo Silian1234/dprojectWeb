@@ -68,29 +68,32 @@ class LocationSerializer(serializers.ModelSerializer):
 
 # Сериализатор для объектов Gym
 class GymSerializer(serializers.ModelSerializer):
-    location = LocationSerializer()  # Использование вложенного сериализатора
+    location = LocationSerializer()
     pictures = ImageSerializer(many=True, read_only=True)
-    users = UserSerializer(many=True, read_only=True)
+    users = serializers.SerializerMethodField()
 
     class Meta:
         model = Gym
         fields = ['slug', 'name', 'pictures', 'description', 'location', 'users']
 
-    def to_representation(self, instance):
-        users = instance.users.filter(is_staff=True)  # Фильтрация пользователей с is_staff == True
-        data = super().to_representation(instance)
-        data['users'] = UserSerializer(users, many=True).data
-        return data
+    def get_users(self, obj):
+        users = obj.users.all()
+        return UserProfileSerializer(users, many=True, context=self.context).data
+
 
 
 # Сериализатор для профилей пользователей
 class UserProfileSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
-    gyms = GymSerializer(many=True, read_only=True)  # Используем вложенный сериализатор
+    username = serializers.CharField(source='user.username', read_only=True)
+    first_name = serializers.CharField(source='user.first_name', read_only=True)
+    last_name = serializers.CharField(source='user.last_name', read_only=True)
+    email = serializers.EmailField(source='user.email', read_only=True)
+    gyms = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
 
     class Meta:
         model = UserProfile
-        fields = ['user', 'avatar', 'phone_number', 'description', 'gyms']
+        fields = ['username', 'first_name', 'last_name', 'email', 'avatar', 'phone_number', 'description', 'gyms']
+
 
 class ScheduleItemSerializer(serializers.ModelSerializer):
     user = UserProfileSerializer()
