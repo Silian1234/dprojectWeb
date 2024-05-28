@@ -1,33 +1,31 @@
 import logging
-
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
 from django.utils.timezone import localtime
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.routers import DefaultRouter
 from rest_framework.views import APIView
-
-from .permission import IsStaff
-from .serializers import *
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from .serializers import UserRegistrationSerializer, UserLoginSerializer
+
+from .permission import IsStaff
+from .serializers import *
+
+logger = logging.getLogger(__name__)
 
 class GymViewSet(viewsets.ModelViewSet):
     queryset = Gym.objects.all()
     serializer_class = GymSerializer
     lookup_field = 'slug'
-    #authentication_classes = [TokenAuthentication]  # Предполагаем, что используете Token Authentication
-    permission_classes = [AllowAny]  # Только аутентифицированные пользователи могут получить доступ
+    permission_classes = [AllowAny]
 
 class ProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.select_related('user').all()  # Добавляем select_related для оптимизации запроса
     serializer_class = UserProfileSerializer
-    #authentication_classes = [TokenAuthentication]
     permission_classes = [AllowAny]
 
 def csrf(request):
@@ -105,8 +103,6 @@ class AuthViewSet(viewsets.ViewSet):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-
 class UserRegistrationAPIView(APIView):
     permission_classes = [AllowAny]
 
@@ -114,7 +110,6 @@ class UserRegistrationAPIView(APIView):
         serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            # Проверка наличия профиля перед его созданием уже в сериализаторе
             return Response({
                 'username': user.username,
                 'email': user.email,
@@ -123,15 +118,13 @@ class UserRegistrationAPIView(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 class UserLoginAPIView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
-        serializer = UserLoginSerializer(data=request.data)  # Предполагается наличие такого Serializer
+        serializer = UserLoginSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.validated_data['user']
-            # DRF аутентификация с Token
             token, created = Token.objects.get_or_create(user=user)
             return Response({
                 'message': 'Успешная аутентификация',
@@ -141,7 +134,6 @@ class UserLoginAPIView(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_401_UNAUTHORIZED)
 
-
 class PosterListView(APIView):
     permission_classes = [AllowAny]
 
@@ -149,7 +141,6 @@ class PosterListView(APIView):
         posters = Poster.objects.all()
         serializer = PosterSerializer(posters, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
 
 class PosterDetailView(APIView):
     permission_classes = [AllowAny]
@@ -163,9 +154,6 @@ class PosterDetailView(APIView):
         serializer = PosterSerializer(poster)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-logger = logging.getLogger(__name__)
-
-
 class ScheduleViewSet(viewsets.ModelViewSet):
     queryset = Schedule.objects.all()
     serializer_class = ScheduleItemSerializer
@@ -177,8 +165,8 @@ class ScheduleViewSet(viewsets.ModelViewSet):
 
         schedules = Schedule.objects.select_related('user', 'club').all()
         for sched in schedules:
-            local_timestamp = localtime(sched.timestamp)  # Конвертируем в локальное время
-            day_name = days[local_timestamp.weekday()]  # Получаем день недели из локального timestamp
+            local_timestamp = localtime(sched.timestamp)
+            day_name = days[local_timestamp.weekday()]
             hour = local_timestamp.hour
             schedule[day_name][hour] = {
                 'time': hour,
@@ -186,7 +174,7 @@ class ScheduleViewSet(viewsets.ModelViewSet):
             }
 
         for day in days:
-            for hour in range(12, 19):  # Предполагаем, что рабочие часы с 12 до 18
+            for hour in range(12, 19):
                 if hour not in schedule[day]:
                     schedule[day][hour] = {
                         'time': hour,
@@ -194,12 +182,6 @@ class ScheduleViewSet(viewsets.ModelViewSet):
                     }
 
         return schedule
-
-    @action(detail=False, methods=['get'])
-    def weekly(self, request):
-        schedule_data = self.get_weekly_schedule()
-        serializer = WeeklyScheduleSerializer(schedule_data)
-        return Response(serializer.data)
 
     @action(detail=False, methods=['get'])
     def weekly(self, request):
@@ -226,3 +208,6 @@ class PosterViewSet(viewsets.ModelViewSet):
 
 router = DefaultRouter()
 router.register(r'blog', PosterViewSet)
+router.register(r'gyms', GymViewSet)
+router.register(r'profiles', ProfileViewSet)
+router.register(r'schedule', ScheduleViewSet)
