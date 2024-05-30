@@ -23,10 +23,6 @@ class GymViewSet(viewsets.ModelViewSet):
     lookup_field = 'slug'
     permission_classes = [AllowAny]
 
-from rest_framework.parsers import MultiPartParser, FormParser
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
-
 class ProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.select_related('user').all()
     serializer_class = UserProfileSerializer
@@ -112,8 +108,10 @@ class ProfileViewSet(viewsets.ModelViewSet):
             user.set_password(request.data['password'])
             user.save()
 
+        avatar = request.FILES.get('avatar', instance.avatar if instance.avatar else None)
+
         profile_data = {
-            'avatar': request.FILES.get('avatar', instance.avatar),
+            'avatar': avatar,
             'phone_number': request.data.get('phone_number', instance.phone_number),
             'description': request.data.get('description', instance.description),
             'is_staff': request.data.get('is_staff', instance.is_staff),
