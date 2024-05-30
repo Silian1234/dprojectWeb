@@ -9,7 +9,7 @@ class PosterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Poster
-        fields = ['picture', 'title', 'description', 'text']
+        fields = ['id', 'picture', 'title', 'description', 'text']
         read_only_fields = ['publish_date']
 
 # Базовый сериализатор для пользователя, исключающий чувствительные данные
