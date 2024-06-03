@@ -2,19 +2,23 @@ import logging
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
 from django.utils.timezone import localtime
+from django_filters.filters import NumberFilter
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.routers import DefaultRouter
 from rest_framework.views import APIView
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, filters
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import viewsets
+from django_filters import FilterSet, CharFilter
 from .permission import IsStaff
 from .serializers import *
-
+from django_filters import FilterSet, CharFilter, UUIDFilter
+from rest_framework import filters
 logger = logging.getLogger(__name__)
 
 class GymViewSet(viewsets.ModelViewSet):
@@ -251,17 +255,26 @@ class PosterDetailView(APIView):
         serializer = PosterSerializer(poster)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+class ScheduleFilter(FilterSet):
+    gym = CharFilter(field_name='club__slug', lookup_expr='iexact')
+    user = NumberFilter(field_name='user__id', lookup_expr='exact')
+
+    class Meta:
+        model = Schedule
+        fields = ['gym', 'user']
+
 class ScheduleViewSet(viewsets.ModelViewSet):
     queryset = Schedule.objects.all()
     serializer_class = ScheduleItemSerializer
     permission_classes = [AllowAny]
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = ScheduleFilter
 
-    def get_weekly_schedule(self):
+    def get_weekly_schedule(self, queryset):
         days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
         schedule = {day: {} for day in days}
 
-        schedules = Schedule.objects.select_related('user', 'club').all()
-        for sched in schedules:
+        for sched in queryset:
             local_timestamp = localtime(sched.timestamp)
             day_name = days[local_timestamp.weekday()]
             hour = local_timestamp.hour
@@ -282,7 +295,8 @@ class ScheduleViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def weekly(self, request):
-        schedule_data = self.get_weekly_schedule()
+        queryset = self.filter_queryset(self.get_queryset())
+        schedule_data = self.get_weekly_schedule(queryset)
         serializer = WeeklyScheduleSerializer(schedule_data)
         return Response(serializer.data)
 

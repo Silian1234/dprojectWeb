@@ -56,7 +56,7 @@ class Gym(models.Model):
     pictures = models.ManyToManyField(Image, related_name='gyms')
     description = models.TextField(null=True, blank=True, verbose_name='Описание зала')
     location = models.OneToOneField(Location, on_delete=models.CASCADE)
-    users = models.ManyToManyField(UserProfile, related_name='user_profiles')  # Изменено related_name для предотвращения конфликта
+    users = models.ManyToManyField(UserProfile, null=True, related_name='user_profiles')  # Изменено related_name для предотвращения конфликта
 
     def save(self, *args, **kwargs):
         if not self.slug:  # Генерируем slug только если он еще не установлен
