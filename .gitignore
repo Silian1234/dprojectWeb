@@ -1,1 +1,7 @@
 db.sqlite3
+# Local credentials and generated Python bytecode
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
